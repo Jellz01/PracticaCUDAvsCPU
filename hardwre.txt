@@ -1,0 +1,11 @@
+ocumentación del equipo y entorno
+Hardware
+Procesador (CPU): AMD Ryzen 7 5800H con gráficos Radeon
+Memoria RAM: 16 GB
+Tarjeta gráfica (GPU): NVIDIA GeForce RTX 3050, 4 GB VRAM
+Almacenamiento: SSD de 476.9 GB
+Software
+Sistema operativo: Microsoft Windows 11 Home, versión 10.0.26200
+Controlador GPU: NVIDIA Game Ready Driver 617.42 (fecha: 6 de octubre de 2026)
+Toolkit CUDA: Versión 13.4 (según NVIDIA-SMI)
+Compilador: (Indica versión de tu compilador C/C++ y NVCC si aplica)

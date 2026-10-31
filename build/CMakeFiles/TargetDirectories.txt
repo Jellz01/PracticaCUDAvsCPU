@@ -1,0 +1,3 @@
+C:/Users/dauqu_ksp124/Desktop/JW/Practica1/build/CMakeFiles/main.dir
+C:/Users/dauqu_ksp124/Desktop/JW/Practica1/build/CMakeFiles/ALL_BUILD.dir
+C:/Users/dauqu_ksp124/Desktop/JW/Practica1/build/CMakeFiles/ZERO_CHECK.dir
