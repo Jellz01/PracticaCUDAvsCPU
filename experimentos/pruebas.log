@@ -1,0 +1,126 @@
+
+== Matriz pequena calculada a mano ==
+[OK]    CPU media
+[OK]    GPU media 128 hilos
+[OK]    GPU media 256 hilos
+[OK]    GPU media 512 hilos
+[OK]    CPU nitidez
+[OK]    GPU nitidez 128 hilos
+[OK]    GPU nitidez 256 hilos
+[OK]    GPU nitidez 512 hilos
+[OK]    CPU laplaciano
+[OK]    GPU laplaciano 128 hilos
+[OK]    GPU laplaciano 256 hilos
+[OK]    GPU laplaciano 512 hilos
+
+== Conversion a 0-255 ==
+[OK]    nitidez -10 -> 0
+[OK]    nitidez 310 -> 255
+[OK]    laplaciano -220 -> 0
+[OK]    laplaciano -30 -> 98
+[OK]    laplaciano 200 -> 255
+[OK]    media 13.33 -> 13
+[OK]    media 17.78 -> 18
+
+== Dimensiones no multiplos de los hilos por bloque ==
+[OK]    no_multiplo media 1x1 k=3 hilos=128 errMax=0.000000
+[OK]    no_multiplo media 1x1 k=3 hilos=256 errMax=0.000000
+[OK]    no_multiplo media 1x1 k=3 hilos=512 errMax=0.000000
+[OK]    no_multiplo media 1x1 k=9 hilos=128 errMax=0.000000
+[OK]    no_multiplo media 1x1 k=9 hilos=256 errMax=0.000000
+[OK]    no_multiplo media 1x1 k=9 hilos=512 errMax=0.000000
+[OK]    no_multiplo media 1x1 k=21 hilos=128 errMax=0.000000
+[OK]    no_multiplo media 1x1 k=21 hilos=256 errMax=0.000000
+[OK]    no_multiplo media 1x1 k=21 hilos=512 errMax=0.000000
+[OK]    no_multiplo nitidez 1x1 k=3 hilos=128 errMax=0.000000
+[OK]    no_multiplo nitidez 1x1 k=3 hilos=256 errMax=0.000000
+[OK]    no_multiplo nitidez 1x1 k=3 hilos=512 errMax=0.000000
+[OK]    no_multiplo laplaciano 1x1 k=3 hilos=128 errMax=0.000000
+[OK]    no_multiplo laplaciano 1x1 k=3 hilos=256 errMax=0.000000
+[OK]    no_multiplo laplaciano 1x1 k=3 hilos=512 errMax=0.000000
+[OK]    no_multiplo media 7x5 k=3 hilos=128 errMax=0.000000
+[OK]    no_multiplo media 7x5 k=3 hilos=256 errMax=0.000000
+[OK]    no_multiplo media 7x5 k=3 hilos=512 errMax=0.000000
+[OK]    no_multiplo media 7x5 k=9 hilos=128 errMax=0.000000
+[OK]    no_multiplo media 7x5 k=9 hilos=256 errMax=0.000000
+[OK]    no_multiplo media 7x5 k=9 hilos=512 errMax=0.000000
+[OK]    no_multiplo media 7x5 k=21 hilos=128 errMax=0.000000
+[OK]    no_multiplo media 7x5 k=21 hilos=256 errMax=0.000000
+[OK]    no_multiplo media 7x5 k=21 hilos=512 errMax=0.000000
+[OK]    no_multiplo nitidez 7x5 k=3 hilos=128 errMax=0.000000
+[OK]    no_multiplo nitidez 7x5 k=3 hilos=256 errMax=0.000000
+[OK]    no_multiplo nitidez 7x5 k=3 hilos=512 errMax=0.000000
+[OK]    no_multiplo laplaciano 7x5 k=3 hilos=128 errMax=0.000000
+[OK]    no_multiplo laplaciano 7x5 k=3 hilos=256 errMax=0.000000
+[OK]    no_multiplo laplaciano 7x5 k=3 hilos=512 errMax=0.000000
+[OK]    no_multiplo media 513x1 k=3 hilos=128 errMax=0.000000
+[OK]    no_multiplo media 513x1 k=3 hilos=256 errMax=0.000000
+[OK]    no_multiplo media 513x1 k=3 hilos=512 errMax=0.000000
+[OK]    no_multiplo media 513x1 k=9 hilos=128 errMax=0.000000
+[OK]    no_multiplo media 513x1 k=9 hilos=256 errMax=0.000000
+[OK]    no_multiplo media 513x1 k=9 hilos=512 errMax=0.000000
+[OK]    no_multiplo media 513x1 k=21 hilos=128 errMax=0.000000
+[OK]    no_multiplo media 513x1 k=21 hilos=256 errMax=0.000000
+[OK]    no_multiplo media 513x1 k=21 hilos=512 errMax=0.000000
+[OK]    no_multiplo nitidez 513x1 k=3 hilos=128 errMax=0.000000
+[OK]    no_multiplo nitidez 513x1 k=3 hilos=256 errMax=0.000000
+[OK]    no_multiplo nitidez 513x1 k=3 hilos=512 errMax=0.000000
+[OK]    no_multiplo laplaciano 513x1 k=3 hilos=128 errMax=0.000000
+[OK]    no_multiplo laplaciano 513x1 k=3 hilos=256 errMax=0.000000
+[OK]    no_multiplo laplaciano 513x1 k=3 hilos=512 errMax=0.000000
+[OK]    no_multiplo media 1x257 k=3 hilos=128 errMax=0.000000
+[OK]    no_multiplo media 1x257 k=3 hilos=256 errMax=0.000000
+[OK]    no_multiplo media 1x257 k=3 hilos=512 errMax=0.000000
+[OK]    no_multiplo media 1x257 k=9 hilos=128 errMax=0.000000
+[OK]    no_multiplo media 1x257 k=9 hilos=256 errMax=0.000000
+[OK]    no_multiplo media 1x257 k=9 hilos=512 errMax=0.000000
+[OK]    no_multiplo media 1x257 k=21 hilos=128 errMax=0.000000
+[OK]    no_multiplo media 1x257 k=21 hilos=256 errMax=0.000000
+[OK]    no_multiplo media 1x257 k=21 hilos=512 errMax=0.000000
+[OK]    no_multiplo nitidez 1x257 k=3 hilos=128 errMax=0.000000
+[OK]    no_multiplo nitidez 1x257 k=3 hilos=256 errMax=0.000000
+[OK]    no_multiplo nitidez 1x257 k=3 hilos=512 errMax=0.000000
+[OK]    no_multiplo laplaciano 1x257 k=3 hilos=128 errMax=0.000000
+[OK]    no_multiplo laplaciano 1x257 k=3 hilos=256 errMax=0.000000
+[OK]    no_multiplo laplaciano 1x257 k=3 hilos=512 errMax=0.000000
+[OK]    no_multiplo media 1001x777 k=3 hilos=128 errMax=0.000000
+[OK]    no_multiplo media 1001x777 k=3 hilos=256 errMax=0.000000
+[OK]    no_multiplo media 1001x777 k=3 hilos=512 errMax=0.000000
+[OK]    no_multiplo media 1001x777 k=9 hilos=128 errMax=0.000000
+[OK]    no_multiplo media 1001x777 k=9 hilos=256 errMax=0.000000
+[OK]    no_multiplo media 1001x777 k=9 hilos=512 errMax=0.000000
+[OK]    no_multiplo media 1001x777 k=21 hilos=128 errMax=0.000000
+[OK]    no_multiplo media 1001x777 k=21 hilos=256 errMax=0.000000
+[OK]    no_multiplo media 1001x777 k=21 hilos=512 errMax=0.000000
+[OK]    no_multiplo nitidez 1001x777 k=3 hilos=128 errMax=0.000000
+[OK]    no_multiplo nitidez 1001x777 k=3 hilos=256 errMax=0.000000
+[OK]    no_multiplo nitidez 1001x777 k=3 hilos=512 errMax=0.000000
+[OK]    no_multiplo laplaciano 1001x777 k=3 hilos=128 errMax=0.000000
+[OK]    no_multiplo laplaciano 1001x777 k=3 hilos=256 errMax=0.000000
+[OK]    no_multiplo laplaciano 1001x777 k=3 hilos=512 errMax=0.000000
+
+== Imagenes reales: CPU contra GPU ==
+[OK]    ../Imagenes/entrada/4000.png tiene el tamano esperado
+[OK]    imagen media 4000x4000 k=3 hilos=256 errMax=0.000000
+[OK]    ../Imagenes/entrada/4000.png tiene el tamano esperado
+[OK]    imagen nitidez 4000x4000 k=3 hilos=256 errMax=0.000000
+[OK]    ../Imagenes/entrada/4000.png tiene el tamano esperado
+[OK]    imagen laplaciano 4000x4000 k=3 hilos=256 errMax=0.000000
+[OK]    ../Imagenes/entrada/2000.png tiene el tamano esperado
+[OK]    imagen media 2000x2000 k=9 hilos=256 errMax=0.000000
+[OK]    ../Imagenes/entrada/4000.png tiene el tamano esperado
+[OK]    imagen media 4000x4000 k=9 hilos=256 errMax=0.000000
+[OK]    ../Imagenes/entrada/6000.png tiene el tamano esperado
+[OK]    imagen media 6000x6000 k=9 hilos=256 errMax=0.000000
+[OK]    ../Imagenes/entrada/4000.png tiene el tamano esperado
+[OK]    imagen media 4000x4000 k=21 hilos=256 errMax=0.000000
+[OK]    ../Imagenes/entrada/4000.png tiene el tamano esperado
+[OK]    imagen media 4000x4000 k=9 hilos=128 errMax=0.000000
+[OK]    ../Imagenes/entrada/4000.png tiene el tamano esperado
+[OK]    imagen media 4000x4000 k=9 hilos=512 errMax=0.000000
+[OK]    guardar ../experimentos/imagenes/media_3_2000.png
+[OK]    guardar ../experimentos/imagenes/media_21_2000.png
+[OK]    guardar ../experimentos/imagenes/nitidez_2000.png
+[OK]    guardar ../experimentos/imagenes/laplaciano_2000.png
+
+TODAS LAS PRUEBAS PASARON

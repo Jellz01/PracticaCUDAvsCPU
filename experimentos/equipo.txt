@@ -1,0 +1,12 @@
+Equipo y herramientas usados en crudo.csv y validacion.csv
+CPU: Intel(R) Core(TM) Ultra 9 275HX, 24 nucleos, 24 hilos logicos
+RAM: 31.4 GB visibles para el sistema
+GPU, memoria, controlador: NVIDIA GeForce RTX 5060 Laptop GPU, 8151 MiB, 617.14
+Sistema: Microsoft Windows 11 Home 10.0.26300
+CUDA: nvcc 13.4.92
+Compilador: MSVC 19.51.36246 x64
+CMake: 4.2.3-msvc3
+Banderas Release C++: /O2 /Ob2 /DNDEBUG
+Banderas Release CUDA: -Xcompiler="-O2 -Ob2" -DNDEBUG
+Python 3.11.9, Pillow 12.3.0, pandas 3.0.5, matplotlib 3.11.1, numpy 1.26.4
+Alimentacion durante las mediciones: conectado a corriente

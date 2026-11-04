@@ -1,121 +1,136 @@
 #include "filtros.h"
+
 #include <cuda_runtime.h>
-#include <iostream>
 
-// Kernels CUDA
-__global__ void kernelAplicarFiltroMedia(const unsigned char* entrada, unsigned char* salida, int ancho, int alto) {
-    int x = blockIdx.x * blockDim.x + threadIdx.x;
-    int y = blockIdx.y * blockDim.y + threadIdx.y;
-    if (x >= ancho || y >= alto) return;
+#include <chrono>
+#include <cstdio>
+#include <cstdlib>
 
-    int suma = 0;
-    for (int ky = -1; ky <= 1; ky++)
-        for (int kx = -1; kx <= 1; kx++) {
-            int nx = min(max(x + kx, 0), ancho - 1);
-            int ny = min(max(y + ky, 0), alto - 1);
-            suma += entrada[ny * ancho + nx];
-        }
-    salida[y * ancho + x] = (unsigned char)(suma / 9);
+// Si una llamada CUDA falla, el programa se detiene en vez de medir resultados invalidos.
+static void verificar(cudaError_t error, const char* operacion) {
+    if (error != cudaSuccess) {
+        std::fprintf(stderr, "Error CUDA en %s: %s\n", operacion, cudaGetErrorString(error));
+        std::exit(1);
+    }
+}
+#define CUDA_OK(llamada) verificar((llamada), #llamada)
+
+// Distribucion: bloques e hilos solo en X.
+//   indice global = blockIdx.x * blockDim.x + threadIdx.x
+//   fila          = indice / ancho
+//   columna       = indice % ancho
+// El ultimo bloque puede tener hilos de sobra: esos hilos no procesan ningun pixel.
+__global__ void kernelFiltroMedia(const unsigned char* entrada, float* salida, int ancho, int alto, int ksize) {
+    int indice = blockIdx.x * blockDim.x + threadIdx.x;
+    if (indice >= ancho * alto) return;
+    int y = indice / ancho;
+    int x = indice % ancho;
+    salida[indice] = calcularMedia(entrada, ancho, alto, x, y, ksize);
 }
 
-__global__ void kernelAplicarFiltroNitidez(const unsigned char* entrada, unsigned char* salida, int ancho, int alto) {
-    int x = blockIdx.x * blockDim.x + threadIdx.x;
-    int y = blockIdx.y * blockDim.y + threadIdx.y;
-    if (x >= ancho || y >= alto) return;
-
-    int suma = 0;
-    for (int ky = -1; ky <= 1; ky++)
-        for (int kx = -1; kx <= 1; kx++) {
-            int nx = min(max(x + kx, 0), ancho - 1);
-            int ny = min(max(y + ky, 0), alto - 1);
-            int pixel = entrada[ny * ancho + nx];
-            if (ky == 0 && kx == 0) suma += pixel * 5;
-            else if (ky == 0 || kx == 0) suma += pixel * (-1);
-        }
-    salida[y * ancho + x] = limitar(suma);
+__global__ void kernelFiltroNitidez(const unsigned char* entrada, float* salida, int ancho, int alto) {
+    int indice = blockIdx.x * blockDim.x + threadIdx.x;
+    if (indice >= ancho * alto) return;
+    int y = indice / ancho;
+    int x = indice % ancho;
+    salida[indice] = calcularNitidez(entrada, ancho, alto, x, y);
 }
 
-__global__ void kernelAplicarFiltroLaplaciano(const unsigned char* entrada, unsigned char* salida, int ancho, int alto) {
-    int x = blockIdx.x * blockDim.x + threadIdx.x;
-    int y = blockIdx.y * blockDim.y + threadIdx.y;
-    if (x >= ancho || y >= alto) return;
-
-    int suma = 0;
-    for (int ky = -1; ky <= 1; ky++)
-        for (int kx = -1; kx <= 1; kx++) {
-            int nx = min(max(x + kx, 0), ancho - 1);
-            int ny = min(max(y + ky, 0), alto - 1);
-            int pixel = entrada[ny * ancho + nx];
-            if (ky == 0 && kx == 0) suma += pixel * (-4);
-            else if (ky == 0 || kx == 0) suma += pixel * 1;
-        }
-    int val = suma + 128;
-    salida[y * ancho + x] = limitar(val);
+__global__ void kernelFiltroLaplaciano(const unsigned char* entrada, float* salida, int ancho, int alto) {
+    int indice = blockIdx.x * blockDim.x + threadIdx.x;
+    if (indice >= ancho * alto) return;
+    int y = indice / ancho;
+    int x = indice % ancho;
+    salida[indice] = calcularLaplaciano(entrada, ancho, alto, x, y);
 }
 
-// Wrappers CUDA con extern "C"
-extern "C" void filtroMediaCUDA(const unsigned char* h_entrada, unsigned char* h_salida, int ancho,
-                               int alto, int ksize, int hilosPorBloque) {
-    size_t imgSize = ancho * alto * sizeof(unsigned char);
+static double msEntre(std::chrono::steady_clock::time_point a, std::chrono::steady_clock::time_point b) {
+    return std::chrono::duration<double, std::milli>(b - a).count();
+}
+
+// Pasos comunes a los tres filtros. Las reservas y los eventos se crean antes de
+// medir, asi que el tiempo conjunto solo incluye transferencias y ejecucion.
+template <typename LanzarKernel>
+static void ejecutarCUDA(const unsigned char* h_entrada, float* h_salida, int ancho, int alto,
+                         int hilosPorBloque, TiemposCUDA* tiempos, LanzarKernel lanzarKernel) {
+    if (hilosPorBloque < 1 || hilosPorBloque > maxHilosPorBloqueCUDA()) {
+        std::fprintf(stderr, "La GPU no permite %d hilos por bloque.\n", hilosPorBloque);
+        std::exit(1);
+    }
+
+    size_t pixeles = static_cast<size_t>(ancho) * alto;
     unsigned char* d_entrada = nullptr;
-    unsigned char* d_salida = nullptr;
+    float* d_salida = nullptr;
+    CUDA_OK(cudaMalloc(&d_entrada, pixeles * sizeof(unsigned char)));
+    CUDA_OK(cudaMalloc(&d_salida, pixeles * sizeof(float)));
 
-    cudaMalloc(&d_entrada, imgSize);
-    cudaMalloc(&d_salida, imgSize);
-    cudaMemcpy(d_entrada, h_entrada, imgSize, cudaMemcpyHostToDevice);
+    cudaEvent_t inicioKernel, finKernel;
+    CUDA_OK(cudaEventCreate(&inicioKernel));
+    CUDA_OK(cudaEventCreate(&finKernel));
 
-    dim3 blockDim(hilosPorBloque, 1);
-    dim3 gridDim((ancho + blockDim.x - 1) / blockDim.x, alto);
+    int bloques = static_cast<int>((pixeles + hilosPorBloque - 1) / hilosPorBloque);
+    dim3 dimBloque(hilosPorBloque);
+    dim3 dimMalla(bloques);
 
-    kernelAplicarFiltroMedia<<<gridDim, blockDim>>>(d_entrada, d_salida, ancho, alto);
+    auto t0 = std::chrono::steady_clock::now();
+    CUDA_OK(cudaMemcpy(d_entrada, h_entrada, pixeles * sizeof(unsigned char), cudaMemcpyHostToDevice));
+    CUDA_OK(cudaDeviceSynchronize());
+    auto t1 = std::chrono::steady_clock::now();
 
-    cudaDeviceSynchronize();
+    CUDA_OK(cudaEventRecord(inicioKernel));
+    lanzarKernel(d_entrada, d_salida, dimMalla, dimBloque);
+    CUDA_OK(cudaGetLastError());
+    CUDA_OK(cudaEventRecord(finKernel));
+    CUDA_OK(cudaEventSynchronize(finKernel));
+    auto t2 = std::chrono::steady_clock::now();
 
-    cudaMemcpy(h_salida, d_salida, imgSize, cudaMemcpyDeviceToHost);
-    cudaFree(d_entrada);
-    cudaFree(d_salida);
+    CUDA_OK(cudaMemcpy(h_salida, d_salida, pixeles * sizeof(float), cudaMemcpyDeviceToHost));
+    CUDA_OK(cudaDeviceSynchronize());
+    auto t3 = std::chrono::steady_clock::now();
+
+    float kernelMs = 0.0f;
+    CUDA_OK(cudaEventElapsedTime(&kernelMs, inicioKernel, finKernel));
+
+    if (tiempos != nullptr) {
+        tiempos->h2d_ms = msEntre(t0, t1);
+        tiempos->kernel_ms = kernelMs;
+        tiempos->d2h_ms = msEntre(t2, t3);
+        tiempos->total_ms = msEntre(t0, t3);
+        tiempos->bloques = bloques;
+    }
+
+    CUDA_OK(cudaEventDestroy(inicioKernel));
+    CUDA_OK(cudaEventDestroy(finKernel));
+    CUDA_OK(cudaFree(d_entrada));
+    CUDA_OK(cudaFree(d_salida));
 }
 
-extern "C" void filtroNitidezCUDA(const unsigned char* h_entrada, unsigned char* h_salida, int ancho,
-                                 int alto, int hilosPorBloque) {
-    size_t imgSize = ancho * alto * sizeof(unsigned char);
-    unsigned char* d_entrada = nullptr;
-    unsigned char* d_salida = nullptr;
-
-    cudaMalloc(&d_entrada, imgSize);
-    cudaMalloc(&d_salida, imgSize);
-    cudaMemcpy(d_entrada, h_entrada, imgSize, cudaMemcpyHostToDevice);
-
-    dim3 blockDim(hilosPorBloque, 1);
-    dim3 gridDim((ancho + blockDim.x - 1) / blockDim.x, alto);
-
-    kernelAplicarFiltroNitidez<<<gridDim, blockDim>>>(d_entrada, d_salida, ancho, alto);
-
-    cudaDeviceSynchronize();
-
-    cudaMemcpy(h_salida, d_salida, imgSize, cudaMemcpyDeviceToHost);
-    cudaFree(d_entrada);
-    cudaFree(d_salida);
+void filtroMediaCUDA(const unsigned char* h_entrada, float* h_salida, int ancho, int alto, int ksize,
+                     int hilosPorBloque, TiemposCUDA* tiempos) {
+    ejecutarCUDA(h_entrada, h_salida, ancho, alto, hilosPorBloque, tiempos,
+                 [=](const unsigned char* e, float* s, dim3 malla, dim3 bloque) {
+                     kernelFiltroMedia<<<malla, bloque>>>(e, s, ancho, alto, ksize);
+                 });
 }
 
-extern "C" void filtroLaplacianoCUDA(const unsigned char* h_entrada, unsigned char* h_salida, int ancho,
-                                    int alto, int hilosPorBloque) {
-    size_t imgSize = ancho * alto * sizeof(unsigned char);
-    unsigned char* d_entrada = nullptr;
-    unsigned char* d_salida = nullptr;
+void filtroNitidezCUDA(const unsigned char* h_entrada, float* h_salida, int ancho, int alto,
+                       int hilosPorBloque, TiemposCUDA* tiempos) {
+    ejecutarCUDA(h_entrada, h_salida, ancho, alto, hilosPorBloque, tiempos,
+                 [=](const unsigned char* e, float* s, dim3 malla, dim3 bloque) {
+                     kernelFiltroNitidez<<<malla, bloque>>>(e, s, ancho, alto);
+                 });
+}
 
-    cudaMalloc(&d_entrada, imgSize);
-    cudaMalloc(&d_salida, imgSize);
-    cudaMemcpy(d_entrada, h_entrada, imgSize, cudaMemcpyHostToDevice);
+void filtroLaplacianoCUDA(const unsigned char* h_entrada, float* h_salida, int ancho, int alto,
+                          int hilosPorBloque, TiemposCUDA* tiempos) {
+    ejecutarCUDA(h_entrada, h_salida, ancho, alto, hilosPorBloque, tiempos,
+                 [=](const unsigned char* e, float* s, dim3 malla, dim3 bloque) {
+                     kernelFiltroLaplaciano<<<malla, bloque>>>(e, s, ancho, alto);
+                 });
+}
 
-    dim3 blockDim(hilosPorBloque, 1);
-    dim3 gridDim((ancho + blockDim.x - 1) / blockDim.x, alto);
-
-    kernelAplicarFiltroLaplaciano<<<gridDim, blockDim>>>(d_entrada, d_salida, ancho, alto);
-
-    cudaDeviceSynchronize();
-
-    cudaMemcpy(h_salida, d_salida, imgSize, cudaMemcpyDeviceToHost);
-    cudaFree(d_entrada);
-    cudaFree(d_salida);
+int maxHilosPorBloqueCUDA() {
+    cudaDeviceProp propiedades;
+    CUDA_OK(cudaGetDeviceProperties(&propiedades, 0));
+    return propiedades.maxThreadsPerBlock;
 }

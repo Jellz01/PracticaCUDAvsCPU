@@ -1,1 +1,10 @@
-"enviroment/" | Out-File -Encoding utf8 .gitignore
+enviroment/
+build/
+build-local/
+codigo/build/
+codigo/*.exe
+codigo/*.ilk
+codigo/*.pdb
+codigo/Imagenes/
+.vscode/
+__pycache__/

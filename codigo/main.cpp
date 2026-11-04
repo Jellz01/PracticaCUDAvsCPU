@@ -3,20 +3,13 @@
 #include "stb_image.h"
 #include "stb_image_write.h"
 
+#include "filtros.h"
+
+#include <cstring>
 #include <iostream>
 #include <string>
 #include <chrono>
 #include <filesystem>  // C++17
-
-// Declaraciones de funciones CPU
-void aplicarFiltroMedia(const unsigned char* entrada, unsigned char* salida, int ancho, int alto, int ksize);
-void aplicarFiltroNitidez(const unsigned char* entrada, unsigned char* salida, int ancho, int alto);
-void aplicarFiltroLaplaciano(const unsigned char* entrada, unsigned char* salida, int ancho, int alto);
-
-// Funciones CUDA (comentadas para evitar linker errors)
-// void filtroMediaCUDA(...);
-// void filtroNitidezCUDA(...);
-// void filtroLaplacianoCUDA(...);
 
 void crearDirectorioSiNoExiste(const std::string& ruta) {
     std::filesystem::create_directories(ruta);
@@ -44,9 +37,9 @@ int main() {
     std::cin >> resolucion;
     std::string rutaImagen;
     switch (resolucion) {
-        case 1: ancho = alto = 2000; rutaImagen = "C:/Users/dauqu_ksp124/Desktop/JW/Practica1/Imagenes/resultados/2000.jpg"; break;
-        case 2: ancho = alto = 4000; rutaImagen = "C:/Users/dauqu_ksp124/Desktop/JW/Practica1/Imagenes/resultados/4000.jpg"; break;
-        case 3: ancho = alto = 6000; rutaImagen = "C:/Users/dauqu_ksp124/Desktop/JW/Practica1/Imagenes/resultados/6000.jpg"; break;
+        case 1: ancho = alto = 2000; rutaImagen = "../Imagenes/entrada/2000.png"; break;
+        case 2: ancho = alto = 4000; rutaImagen = "../Imagenes/entrada/4000.png"; break;
+        case 3: ancho = alto = 6000; rutaImagen = "../Imagenes/entrada/6000.png"; break;
         default:
             std::cout << "Resolución inválida\n";
             return 1;
@@ -61,7 +54,6 @@ int main() {
         }
     }
 
-    /*
     if (modo == 2) {
         std::cout << "Ingrese hilos por bloque CUDA (128, 256, 512): ";
         std::cin >> hilosPorBloque;
@@ -70,7 +62,6 @@ int main() {
             return 1;
         }
     }
-    */
 
     int canales;
     unsigned char* imgCargada = stbi_load(rutaImagen.c_str(), &ancho, &alto, &canales, 1);
@@ -80,34 +71,46 @@ int main() {
     }
 
     unsigned char* h_entrada = new unsigned char[ancho * alto];
-    unsigned char* h_salida = new unsigned char[ancho * alto];
+    float* h_salida = new float[ancho * alto];
+    unsigned char* h_visual = new unsigned char[ancho * alto];
     memcpy(h_entrada, imgCargada, ancho * alto * sizeof(unsigned char));
     stbi_image_free(imgCargada);
 
     std::cout << "Ejecutando filtro...\n";
 
-    auto start = std::chrono::high_resolution_clock::now();
-
     if (modo == 1) {
+        auto start = std::chrono::steady_clock::now();
         if (filtro == 1)
             aplicarFiltroMedia(h_entrada, h_salida, ancho, alto, mascara);
         else if (filtro == 2)
             aplicarFiltroNitidez(h_entrada, h_salida, ancho, alto);
-        else if (filtro == 3)
+        else
             aplicarFiltroLaplaciano(h_entrada, h_salida, ancho, alto);
+        auto end = std::chrono::steady_clock::now();
+        std::cout << "Tiempo secuencial: " << std::chrono::duration<double, std::milli>(end - start).count() << " ms\n";
     } else {
-        std::cout << "Modo CUDA deshabilitado. Usando CPU.\n";
+        TiemposCUDA t{};
+        if (filtro == 1)
+            filtroMediaCUDA(h_entrada, h_salida, ancho, alto, mascara, hilosPorBloque, &t);
+        else if (filtro == 2)
+            filtroNitidezCUDA(h_entrada, h_salida, ancho, alto, hilosPorBloque, &t);
+        else
+            filtroLaplacianoCUDA(h_entrada, h_salida, ancho, alto, hilosPorBloque, &t);
+        std::cout << "Bloques:  " << t.bloques << " de " << hilosPorBloque << " hilos\n"
+                  << "CPU->GPU: " << t.h2d_ms << " ms\n"
+                  << "Kernel:   " << t.kernel_ms << " ms\n"
+                  << "GPU->CPU: " << t.d2h_ms << " ms\n"
+                  << "Conjunto: " << t.total_ms << " ms\n";
     }
 
-    auto end = std::chrono::high_resolution_clock::now();
-    double duracion_ms = std::chrono::duration<double, std::milli>(end - start).count();
-    std::cout << "Tiempo de ejecución del filtro: " << duracion_ms << " ms\n";
+    for (int i = 0; i < ancho * alto; i++)
+        h_visual[i] = convertirAVisualizacion(h_salida[i], static_cast<TipoFiltro>(filtro));
 
     std::string carpetaSalida = "Imagenes/final";
     crearDirectorioSiNoExiste(carpetaSalida);
     std::string rutaSalida = carpetaSalida + "/imagen_final.png";
 
-    if (stbi_write_png(rutaSalida.c_str(), ancho, alto, 1, h_salida, ancho)) {
+    if (stbi_write_png(rutaSalida.c_str(), ancho, alto, 1, h_visual, ancho)) {
         std::cout << "Imagen guardada en: " << rutaSalida << "\n";
     } else {
         std::cerr << "Error al guardar la imagen\n";
@@ -115,6 +118,7 @@ int main() {
 
     delete[] h_entrada;
     delete[] h_salida;
+    delete[] h_visual;
 
     std::cout << "Proceso completado.\n";
     return 0;

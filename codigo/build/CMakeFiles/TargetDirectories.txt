@@ -1,3 +1,0 @@
-C:/Users/dauqu_ksp124/Desktop/JW/Practica1/codigo/build/CMakeFiles/main.dir
-C:/Users/dauqu_ksp124/Desktop/JW/Practica1/codigo/build/CMakeFiles/edit_cache.dir
-C:/Users/dauqu_ksp124/Desktop/JW/Practica1/codigo/build/CMakeFiles/rebuild_cache.dir
