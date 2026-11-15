@@ -17,8 +17,9 @@ add_library(filtros STATIC filtros.cpp filtros.cu)
 add_executable(main main.cpp)
 add_executable(pruebas pruebas.cpp)
 add_executable(benchmark benchmark.cpp)
+add_executable(exportar_salidas exportar_salidas.cpp)
 
-foreach(programa main pruebas benchmark)
+foreach(programa main pruebas benchmark exportar_salidas)
     target_link_libraries(${programa} PRIVATE filtros)
     set_target_properties(${programa} PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}"
